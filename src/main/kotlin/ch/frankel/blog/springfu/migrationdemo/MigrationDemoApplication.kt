@@ -1,33 +1,35 @@
 package ch.frankel.blog.springfu.migrationdemo
 
-import org.springframework.boot.autoconfigure.SpringBootApplication
-import org.springframework.boot.runApplication
-import org.springframework.context.support.beans
+import org.springframework.boot.WebApplicationType.SERVLET
+import org.springframework.data.jpa.repository.support.SimpleJpaRepository
 import org.springframework.data.repository.PagingAndSortingRepository
-import org.springframework.web.servlet.function.*
+import org.springframework.fu.kofu.application
+import org.springframework.fu.kofu.webmvc.webMvc
+import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean
+import org.springframework.web.servlet.function.ServerRequest
+import org.springframework.web.servlet.function.ServerResponse
 import java.time.LocalDate
-import javax.persistence.Entity
-import javax.persistence.Id
-
-@SpringBootApplication
-class MigrationDemoApplication
-
-fun beans() = beans {
-    bean<PersonHandler>()
-    bean {
-        router {
-            "/person".nest {
-                GET("/{id}", ref<PersonHandler>()::readOne)
-                GET("/") { ref<PersonHandler>().readAll() }
-            }
-        }
-    }
-}
+import javax.persistence.*
 
 fun main(args: Array<String>) {
-    runApplication<MigrationDemoApplication>(*args) {
-        addInitializers(beans())
-    }
+    application(SERVLET) {
+        beans {
+            bean<PersonRepository>()
+            bean<PersonHandler>()
+        }
+        webMvc {
+            router {
+                "/person".nest {
+                    GET("/{id}", ref<PersonHandler>()::readOne)
+                    GET("/") { ref<PersonHandler>().readAll() }
+                }
+            }
+            converters {
+                string()
+                jackson()
+            }
+        }
+    }.run(args)
 }
 
 class PersonHandler(private val personRepository: PersonRepository) {
